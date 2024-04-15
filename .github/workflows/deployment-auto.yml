@@ -1,0 +1,425 @@
+name: portal-admin-[auto][dev,stg] codedeploy-workflows
+
+
+on:
+  push:    
+    branches: [ dev, stg ]
+  # workflow_dispatch:
+
+
+permissions:
+  id-token: write # This is required for requesting the JWT
+  contents: read  # This is required for actions/checkout      
+
+env:
+  AWS_REGION:                   ap-northeast-2
+
+  #ProjectUpdate #Default Settings - Required
+  PROJECT_NAME:                 portal-admin
+  COPY_PATH_LIST:               WAS,petra
+  S3_DEPLOY_MGMT_FILE_NAME:     s3deploy.env         #s3deploy.env #미사용시 'NONE' 로 기입
+  BUILD_RESULT_FILE_NAME:       ROOT.war                 #빌드Job이 없는경우  'NONE'로 기입 (war/jar)  
+  S3_DEPLOY_FOLDER_NAME:        deployment-files
+  CODEDEPLOY_PATH:              .codedeploy
+  ADD_LABLE:                    ''                    #'' or -web-config
+  S3_BUCKET_NAME:               s3-aicc-codedeploy
+
+
+  # 개발 계정 (LGU+ AWS)
+  DEV_ASSUME_ROLE_ACCOUNT_NO:   '406927758154' 
+  DEV_ASSUME_ROLE_NAME:         role-dev-aicc-actions
+  DEV_ASSUME_ROLE_SESSION_NAME: role-dev-aicc-github-actions
+  # 검증 계정 (LGU+ AWS)
+  STG_ASSUME_ROLE_ACCOUNT_NO:   '571113805677'
+  STG_ASSUME_ROLE_NAME:         role-stg-aicc-actions
+  STG_ASSUME_ROLE_SESSION_NAME: role-stg-aicc-github-actions
+  # 운영 계정 (LGU+ AWS)
+  PRD_ASSUME_ROLE_ACCOUNT_NO:   '329204419623'
+  PRD_ASSUME_ROLE_NAME:         role-prd-aicc-actions
+  PRD_ASSUME_ROLE_SESSION_NAME: role-prd-aicc-github-actions
+  
+  BUILD_HOME_PATH:              oms/    
+
+  PROJECT_FULL_PATH:     ${{ github.workspace }}    # /home/runner/work/PROJECT_NAME/PROJECT_NAME  
+
+  ##################################################
+  #각 환경별 배포 EC2 인스턴스 이름 목록
+  ##################################################
+  DEV_DEPLOY_INSTANCE_LIST:    az2c
+  STG_DEPLOY_INSTANCE_LIST:    az2a,az2c
+  PRD_DEPLOY_INSTANCE_LIST:    az2a
+  ##################################################  
+
+  #ProjectUpdate - Project Customizing
+  CONF1_TARGET:           /                            # 서버별 다른 설정 없는경우  'NONE'로 기입
+  DEV_CONF1_PATH:        'WAS/_env/dev/*'
+  STG_CONF1_PATH:        'WAS/_env/stg/*'
+  PRD_CONF1_PATH:        'WAS/_env/prd/*'  
+  
+  CONF2_TARGET:           petra/CONFIG                            # 서버별 다른 설정 없는경우  'NONE'로 기입
+  DEV_CONF2_PATH:        'petra/CONFIG/_env/dev/*'
+  STG_CONF2_PATH:        'petra/CONFIG/_env/stg/*'
+  PRD_CONF2_PATH:        'petra/CONFIG/_env/prd/*'
+  
+  CONF3_TARGET:           NONE                        # 서버별 다른 설정 없는경우  'NONE'로 기입
+  DEV_CONF3_PATH:        ''
+  STG_CONF3_PATH:        ''
+  PRD_CONF3_PATH:        ''
+
+  DEV_MODE_NAME:        dev
+  STG_MODE_NAME:        stg
+  PRD_MODE_NAME:        prd
+
+
+  
+  #추후사용될변수목록
+  #AWS_ACCOUNT_ID:        ''
+  #AWS_ASSUME_ROLE_NAME:  ''
+  #AWS_ROLE_SESSION_NAME: ''
+  #S3_BUCKET_NAME:        ''
+  #CONF1_PATH:            ''
+  #CONF2_PATH:            ''
+  #CONF3_PATH:            ''  
+  #MODE_NAME :            ''
+  #DEPLOY_INSTANCE_LIST :        ''
+
+
+
+jobs:
+#init##################################################################################################################################
+  initialization:
+    # if: ${{ github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    outputs:
+      AWS_ACCOUNT_ID: ${{ steps.config-setting.outputs.AWS_ACCOUNT_ID }}
+      AWS_ASSUME_ROLE_NAME: ${{ steps.config-setting.outputs.AWS_ASSUME_ROLE_NAME }}
+      AWS_ROLE_SESSION_NAME: ${{ steps.config-setting.outputs.AWS_ROLE_SESSION_NAME }}
+      CONF1_PATH: ${{ steps.config-setting.outputs.CONF1_PATH }}
+      CONF2_PATH: ${{ steps.config-setting.outputs.CONF2_PATH }}
+      CONF3_PATH: ${{ steps.config-setting.outputs.CONF3_PATH }}
+      MODE_NAME:  ${{ steps.config-setting.outputs.MODE_NAME }}
+      DEPLOY_INSTANCE_LIST:  ${{ steps.config-setting.outputs.DEPLOY_INSTANCE_LIST }}
+
+    steps:
+      - name: Set Variable
+        id: config-setting
+        run: |
+          if [ ${{ github.ref }} == 'refs/heads/dev' ]; then
+            echo "Set dev account"
+            echo "AWS_ACCOUNT_ID=${{ env.DEV_ASSUME_ROLE_ACCOUNT_NO }}" >> "$GITHUB_OUTPUT"
+            echo "AWS_ASSUME_ROLE_NAME=${{ env.DEV_ASSUME_ROLE_NAME }}" >> "$GITHUB_OUTPUT"
+            echo "AWS_ROLE_SESSION_NAME=${{ env.DEV_ASSUME_ROLE_SESSION_NAME }}" >> "$GITHUB_OUTPUT"
+            echo "CONF1_PATH=${{ env.DEV_CONF1_PATH }}" >> "$GITHUB_OUTPUT"
+            echo "CONF2_PATH=${{ env.DEV_CONF2_PATH }}" >> "$GITHUB_OUTPUT"
+            echo "CONF3_PATH=${{ env.DEV_CONF3_PATH }}" >> "$GITHUB_OUTPUT"
+            echo "MODE_NAME=${{ env.DEV_MODE_NAME }}" >> "$GITHUB_OUTPUT"
+            echo "DEPLOY_INSTANCE_LIST=${{ env.DEV_DEPLOY_INSTANCE_LIST }}" >> "$GITHUB_OUTPUT"
+          elif [ ${{ github.ref }} == 'refs/heads/stg' ]; then
+            echo "Set stg account"
+            echo "AWS_ACCOUNT_ID=${{ env.STG_ASSUME_ROLE_ACCOUNT_NO }}" >> "$GITHUB_OUTPUT"
+            echo "AWS_ASSUME_ROLE_NAME=${{ env.STG_ASSUME_ROLE_NAME }}" >> "$GITHUB_OUTPUT"
+            echo "AWS_ROLE_SESSION_NAME=${{ env.STG_ASSUME_ROLE_SESSION_NAME }}" >> "$GITHUB_OUTPUT"
+            echo "CONF1_PATH=${{ env.STG_CONF1_PATH }}" >> "$GITHUB_OUTPUT"
+            echo "CONF2_PATH=${{ env.STG_CONF2_PATH }}" >> "$GITHUB_OUTPUT"
+            echo "CONF3_PATH=${{ env.STG_CONF3_PATH }}" >> "$GITHUB_OUTPUT"
+            echo "MODE_NAME=${{ env.STG_MODE_NAME }}" >> "$GITHUB_OUTPUT"
+            echo "DEPLOY_INSTANCE_LIST=${{ env.STG_DEPLOY_INSTANCE_LIST }}" >> "$GITHUB_OUTPUT"
+          elif [ ${{ github.ref }} == 'refs/heads/main' ]; then
+            echo "Set prd account"
+            echo "AWS_ACCOUNT_ID=${{ env.PRD_ASSUME_ROLE_ACCOUNT_NO }}" >> "$GITHUB_OUTPUT"
+            echo "AWS_ASSUME_ROLE_NAME=${{ env.PRD_ASSUME_ROLE_NAME }}" >> "$GITHUB_OUTPUT"
+            echo "AWS_ROLE_SESSION_NAME=${{ env.PRD_ASSUME_ROLE_SESSION_NAME }}" >> "$GITHUB_OUTPUT"   
+            echo "CONF1_PATH=${{ env.PRD_CONF1_PATH }}" >> "$GITHUB_OUTPUT"
+            echo "CONF2_PATH=${{ env.PRD_CONF2_PATH }}" >> "$GITHUB_OUTPUT"
+            echo "CONF3_PATH=${{ env.PRD_CONF3_PATH }}" >> "$GITHUB_OUTPUT"
+            echo "MODE_NAME=${{ env.PRD_MODE_NAME }}" >> "$GITHUB_OUTPUT"
+            echo "DEPLOY_INSTANCE_LIST=${{ env.PRD_DEPLOY_INSTANCE_LIST }}" >> "$GITHUB_OUTPUT"
+          fi
+             
+###################################################################################################################################
+  build:
+    needs: [ initialization ]
+    runs-on: ubuntu-latest
+    
+    steps:                  
+      - name: (1) Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: arn:aws:iam::${{ needs.initialization.outputs.AWS_ACCOUNT_ID }}:role/${{ needs.initialization.outputs.AWS_ASSUME_ROLE_NAME }}
+          role-session-name: ${{ needs.initialization.outputs.AWS_ROLE_SESSION_NAME }}
+          aws-region: ${{ env.AWS_REGION }}                   
+
+      - name: (3) Run Checkout Repository 
+        uses: actions/checkout@v3 
+      
+      - name: (4) Run setup-java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'corretto'
+          java-version: '17'
+
+      - name: (5) Build with Maven    
+        run: |
+          cd ${{ env.BUILD_HOME_PATH }}
+          ls -al
+          mvn -B package --file pom.xml
+          ls -al      
+        
+      - name: (6) Upload-artifact@v3 
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-artifact
+          path: |
+            ${{ env.BUILD_HOME_PATH }}target/*.war
+          retention-days: 1
+
+  package:
+    needs: [ initialization, build]
+    runs-on: ubuntu-latest
+    steps:           
+      - name: (1) Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: arn:aws:iam::${{ needs.initialization.outputs.AWS_ACCOUNT_ID }}:role/${{ needs.initialization.outputs.AWS_ASSUME_ROLE_NAME }}
+          role-session-name: ${{ needs.initialization.outputs.AWS_ROLE_SESSION_NAME }}
+          aws-region: ${{ env.AWS_REGION }}    
+
+      - name : (2) Check Settings INFO
+        run: |
+          echo "Set << ${{ needs.initialization.outputs.MODE_NAME }} >> Account"
+          echo "GITHUB_TRIGGERING_ACTOR: ${{ github.actor }}"
+          echo "GITHUB_REF: ${{ github.ref }}"
+          echo "DEPLOY_INSTANCE_LIST : ${{ needs.initialization.outputs.DEPLOY_INSTANCE_LIST }}"
+          echo "Selected-AZ: ${{ inputs.aws-az-info }}"
+          
+      - name: (3-1) Run Checkout Repository 
+        uses: actions/checkout@v3     
+
+      - name: (3-2) Download-artifact@v3     
+        uses: actions/download-artifact@v3
+        with:
+          name: build-artifact
+          path: artifact        
+
+      - name: (4) Copy and zip, Upload build artifact to S3 bucket
+        run: |
+
+
+          #############################################################################################################
+          # 배포 인스턴스별 배포 파일 개수만큼 반복
+          #############################################################################################################
+          if [[ "${{ needs.initialization.outputs.DEPLOY_INSTANCE_LIST }}" != "NONE"  ]] ; then
+
+            ARRAY_DEPLOY_INSTANCE=($(echo "${{ needs.initialization.outputs.DEPLOY_INSTANCE_LIST }}" | tr "," "\n")) 
+
+            for dpinstnm in ${ARRAY_DEPLOY_INSTANCE[@]} ; do 
+
+              ##################################################################
+              # 배포 인스턴스별 - 파일복사 시작
+              ##################################################################
+
+              
+              # (2-0)배포용 신규 폴더를 생성 및 그 신규 더에 필요한 파일들 복사
+              # 폴더(.codedeploy-${dpinstnm}) 생성
+              NEW_DEPLOY_HOME_PATH=${{ env.CODEDEPLOY_PATH }}${{ env.ADD_LABLE }}-${dpinstnm}
+              mkdir -p "${NEW_DEPLOY_HOME_PATH}"
+
+              # ex) cp .codedeploy .codedeploy-az2x 작업
+              # cp "${{ env.CODEDEPLOY_PATH }}${{ env.ADD_LABLE }}/" -r "${NEW_DEPLOY_HOME_PATH}/" --recursive  #<- 이 코드 오작동으로 cp 순차적으로 실행
+              cp "${{ env.CODEDEPLOY_PATH }}${{ env.ADD_LABLE }}/files/" -r "${NEW_DEPLOY_HOME_PATH}/" --recursive 
+              cp "${{ env.CODEDEPLOY_PATH }}${{ env.ADD_LABLE }}/lguplus/" -r "${NEW_DEPLOY_HOME_PATH}/" --recursive 
+              cp "${{ env.CODEDEPLOY_PATH }}${{ env.ADD_LABLE }}/scripts/" -r "${NEW_DEPLOY_HOME_PATH}/" --recursive 
+              cp "${{ env.CODEDEPLOY_PATH }}${{ env.ADD_LABLE }}/appspec.yml" -r "${NEW_DEPLOY_HOME_PATH}/" --recursive
+
+
+              ############################################################################
+              # 공통 파일 복사(1) ( from GitHub )
+              # COPY_PATH_LIST
+              ############################################################################
+
+              # (4-0) COPY_PATH_LIST 
+              if [[ "${{ env.COPY_PATH_LIST }}" != "NONE"  ]] ; then     
+                COPY_PATH_ARRAY=($(echo "${{ env.COPY_PATH_LIST }}" | tr "," "\n"))          
+                for fname in ${COPY_PATH_ARRAY[@]} ; do 
+                  cp ${fname} -r ${NEW_DEPLOY_HOME_PATH}/${fname} --recursive
+                done
+              fi ;
+
+              # ls -alR ${NEW_DEPLOY_HOME_PATH}/
+
+              ############################################################################
+              # 공통 파일 복사(2) ( from S3 대용량파일 )
+              # S3_DEPLOY_MGMT_FILE_NAME
+              ############################################################################
+              if [[ "${{ env.S3_DEPLOY_MGMT_FILE_NAME }}" != "NONE"  ]] ; then
+                # (4.1) Upload (local -> s3) s3_deploy.env파일 latest 폴더로 copy
+                aws s3 cp ${{ env.S3_DEPLOY_MGMT_FILE_NAME }} s3://${{ env.S3_BUCKET_NAME }}/${{ env.PROJECT_NAME }}/${{ env.S3_DEPLOY_FOLDER_NAME }}/latest/
+                
+                # (4.2) S3의 latest Folder Reset --exclude "*.env"
+                aws s3 rm s3://${{ env.S3_BUCKET_NAME }}/${{ env.PROJECT_NAME }}/${{ env.S3_DEPLOY_FOLDER_NAME }}/latest/ --recursive --exclude "*.env" 
+                
+                # (4.3) Copy s3(ver) -> s3 (latest)
+                while read line
+                do
+                  if [[ "${line}" != "#"* ]] ; then              
+                    dwninfo=($(echo "${line}" | tr " " "\n"))
+                    if [[ "${dwninfo[0]}" != "NONE"  ]] ; then         
+                      aws s3 cp s3://${{ env.S3_BUCKET_NAME }}/${{ env.PROJECT_NAME }}/${{ env.S3_DEPLOY_FOLDER_NAME }}/${dwninfo[0]}/${dwninfo[1]}/ s3://${{ env.S3_BUCKET_NAME }}/${{ env.PROJECT_NAME }}/${{ env.S3_DEPLOY_FOLDER_NAME }}/latest/ --recursive --include "*"
+                    else 
+                      echo "[ Warning ] ${dwninfo[0]} deployment version-name is NONE, please check the /${{ env.S3_DEPLOY_MGMT_FILE_NAME }} file"
+                    fi ;
+                  fi ;
+                done < ./${{ env.S3_DEPLOY_MGMT_FILE_NAME}}
+
+                sleep 5s # Waits 5 seconds.
+
+                # (4.4) Download : s3 -> local
+                aws s3 cp s3://${{ env.S3_BUCKET_NAME }}/${{ env.PROJECT_NAME }}/${{ env.S3_DEPLOY_FOLDER_NAME }}/latest/ ./${NEW_DEPLOY_HOME_PATH} --recursive --exclude "*.env" --include "*"
+              fi ;  
+
+
+              # (2-1).CONF1_TARGET
+              if [[ "${{ env.CONF1_TARGET }}" != "NONE"  ]] ; then
+                mkdir -p ${NEW_DEPLOY_HOME_PATH}/${{ env.CONF1_TARGET}}
+                if [[ "${{ needs.initialization.outputs.CONF1_PATH }}" != "NONE"  ]] ; then
+                  NEW_CONF1_PATH=$(echo "${{ needs.initialization.outputs.CONF1_PATH }}" | sed "s/%INST-NAME%/${dpinstnm}/")
+                  cp ${NEW_CONF1_PATH} -r ${NEW_DEPLOY_HOME_PATH}/${{ env.CONF1_TARGET}} --recursive
+                fi ;
+              fi ;
+
+              # (2-2).CONF2_TARGET
+              if [[ "${{ env.CONF2_TARGET }}" != "NONE"  ]] ; then
+                mkdir -p ${NEW_DEPLOY_HOME_PATH}/${{ env.CONF2_TARGET}}
+                if [[ "${{ needs.initialization.outputs.CONF2_PATH }}" != "NONE"  ]] ; then
+                  NEW_CONF2_PATH=$(echo "${{ needs.initialization.outputs.CONF2_PATH }}" | sed "s/%INST-NAME%/${dpinstnm}/")
+                  cp ${NEW_CONF2_PATH} -r ${NEW_DEPLOY_HOME_PATH}/${{ env.CONF2_TARGET}} --recursive
+                fi ; 
+              fi ;            
+
+              # (2-3).CONF3_TARGET
+              if [[ "${{ env.CONF3_TARGET }}" != "NONE"  ]] ; then
+                mkdir -p ${NEW_DEPLOY_HOME_PATH}/${{ env.CONF3_TARGET}}
+                if [[ "${{ needs.initialization.outputs.CONF3_PATH }}" != "NONE"  ]] ; then
+                  NEW_CONF3_PATH=$(echo "${{ needs.initialization.outputs.CONF3_PATH }}" | sed "s/%INST-NAME%/${dpinstnm}/")
+                  cp ${NEW_CONF3_PATH} -r ${NEW_DEPLOY_HOME_PATH}/${{ env.CONF3_TARGET}} --recursive
+                fi ; 
+              fi ;
+
+              ###################
+              #3.BUILD_RESULT_FILE_NAME
+              if [[ "${{ env.BUILD_RESULT_FILE_NAME }}" != "NONE"  ]] ; then
+                ls artifact/* -R
+                cp artifact/${{ env.BUILD_RESULT_FILE_NAME }} ${NEW_DEPLOY_HOME_PATH}/${{ env.BUILD_RESULT_FILE_NAME }}           
+              fi ;   
+
+              ##################################################################
+              # 배포 인스턴스별 - 파일복사완료
+              ##################################################################
+
+              echo "[업로드할 파일 확인]"
+              ls -alR ${NEW_DEPLOY_HOME_PATH}/ 
+
+              ##################################################################
+              # 배포 인스턴스별 - 압축(zip) 및 S3 업로드 진행
+              # 프로젝트명-인스턴스명.zip
+              ##################################################################
+              cd "${NEW_DEPLOY_HOME_PATH}/"
+
+              chmod +x scripts/*
+              zip -r ${{ env.PROJECT_NAME }}-${dpinstnm}.zip ./*          
+              aws s3 cp ${{ env.PROJECT_NAME }}-${dpinstnm}.zip s3://${{ env.S3_BUCKET_NAME }}/${{ env.PROJECT_NAME }}/${{ needs.initialization.outputs.MODE_NAME }}/${{ env.PROJECT_NAME }}-${dpinstnm}/${{ env.PROJECT_NAME }}-${dpinstnm}.zip
+              echo "[S3 Upload Success!] s3://${{ env.S3_BUCKET_NAME }}/${{ env.PROJECT_NAME }}/${{ needs.initialization.outputs.MODE_NAME }}/${{ env.PROJECT_NAME }}-${dpinstnm}/${{ env.PROJECT_NAME }}-${dpinstnm}.zip"
+
+              cd - ## 폴더 경로 되돌아가기 
+            done ## for 종료
+
+          ls -al
+          fi ; ## 배포 인스턴스별 배포 파일 개수만큼 반복 -- 종료
+          #############################################################################################################
+
+###################################################################################################################################          
+  deploy:
+    # if: ${{ github.ref == 'refs/heads/test' }}
+    needs: [ initialization, package ]
+    runs-on: ubuntu-latest
+    steps:                  
+      - name: (1) Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: arn:aws:iam::${{ needs.initialization.outputs.AWS_ACCOUNT_ID }}:role/${{ needs.initialization.outputs.AWS_ASSUME_ROLE_NAME }}
+          role-session-name: ${{ needs.initialization.outputs.AWS_ROLE_SESSION_NAME }}
+          aws-region: ${{ env.AWS_REGION }}
+          
+      - name: (3) Create Deployment and Check Deployment  
+        run: |
+
+          #############################################################################################################
+          # 배포 인스턴스별 배포 파일 개수만큼 반복
+          #############################################################################################################
+          if [[ "${{ needs.initialization.outputs.DEPLOY_INSTANCE_LIST }}" != "NONE"  ]] ; then
+            ARRAY_DEPLOY_INSTANCE=($(echo "${{ needs.initialization.outputs.DEPLOY_INSTANCE_LIST }}" | tr "," "\n")) 
+            for dpinstnm in ${ARRAY_DEPLOY_INSTANCE[@]} ; do 
+
+              ###############################
+              # 메인작업 Create Deployment 
+              ###############################
+              _OUTPUT=$(aws deploy create-deployment --application-name ${{ env.PROJECT_NAME }}-${{ needs.initialization.outputs.MODE_NAME }} \
+                  --deployment-group-name ${{ env.PROJECT_NAME }}-${dpinstnm} \
+                  --s3-location bucket=${{ env.S3_BUCKET_NAME }},bundleType=zip,key=${{ env.PROJECT_NAME }}/${{ needs.initialization.outputs.MODE_NAME }}/${{ env.PROJECT_NAME }}-${dpinstnm}/${{ env.PROJECT_NAME }}-${dpinstnm}.zip \
+                  --file-exists-behavior OVERWRITE \
+                  --region ap-northeast-2)
+              echo _OUTPUT=${_OUTPUT}
+              DEPLOYMENT_ID=$(echo ${_OUTPUT} | jq -r '.deploymentId')
+              echo "DEPLOYMENT_ID=${DEPLOYMENT_ID}" >> $GITHUB_ENV
+
+              ###############################
+              # 메인작업 Check Deployment   
+              ###############################
+              sleep 10;
+              # DEPLOYMENT_ID=${{ env.DEPLOYMENT_ID }}
+              while true; do
+                _DEPLOYMENT_INFO=$(aws deploy get-deployment --deployment-id ${DEPLOYMENT_ID} --region ap-northeast-2);
+                _DEPLOYMENT_STATUS=$(echo ${_DEPLOYMENT_INFO} | jq -r '.deploymentInfo.status');
+                _DEPLOYMENT_FAILURE_COUNT=$(echo ${_DEPLOYMENT_INFO} | jq -r '.deploymentInfo.deploymentOverview.Failed');
+                _DEPLOYMENT_OVERVIEW=$(echo ${_DEPLOYMENT_INFO} | jq -r '.deploymentInfo.deploymentOverview');
+                if [ "${_DEPLOYMENT_STATUS}" == "InProgress" ]; then
+                  echo "Deployment still in progress..";
+                  echo ${_DEPLOYMENT_OVERVIEW};
+                  sleep 5;
+                elif [ ${_DEPLOYMENT_FAILURE_COUNT} -gt 0 ]; then
+                  _DEPLOYMENT_INSTANCES_LIST=$(aws deploy list-deployment-instances --deployment-id ${DEPLOYMENT_ID} --region ap-northeast-2 | jq -r '.instancesList[]');
+                  for INSTANCE_ID in ${_DEPLOYMENT_INSTANCES_LIST[@]}; do
+                    _INSTANCE_SUMMARY=$(aws deploy get-deployment-instance --deployment-id ${DEPLOYMENT_ID} --instance-id ${INSTANCE_ID} --region ap-northeast-2);
+                    _INSTANCE_SUMMARY_STATUS=$(echo ${_INSTANCE_SUMMARY} | jq -r '.instanceSummary.status');
+                    if [ ${_INSTANCE_SUMMARY_STATUS} == 'Failed' ]; then
+                      echo "ERROR => ${_INSTANCE_SUMMARY_STATUS} (Instance ID=${INSTANCE_ID})";
+                      _EVENTS=$(echo ${_INSTANCE_SUMMARY} | jq -r '.instanceSummary.lifecycleEvents[]');
+                      _FAILED_EVENTS=$(echo ${_EVENTS} | jq -r 'select(.status == "Failed")');
+                      _ERROR_MESSAGE=$(echo ${_FAILED_EVENTS} | jq -r '.lifecycleEventName + "(" + .diagnostics.errorCode + ") - " + .diagnostics.message');
+                      echo ${_ERROR_MESSAGE};
+                      _ERROR_LOG_TAIL=$(echo ${_FAILED_EVENTS} | jq -r '.diagnostics.logTail');
+                      echo -e "${_ERROR_LOG_TAIL}";
+                    fi;
+                  done;
+                  exit 1;
+                elif [ "${_DEPLOYMENT_STATUS}" == "Succeeded" ]; then
+                  echo "Deployment succeeded.";
+                  echo ${_DEPLOYMENT_OVERVIEW};
+                  break;
+                else
+                  echo "ERROR => Deployment Failed.";
+                  echo "Unknown error.";
+                  echo "Deployment status="${_DEPLOYMENT_STATUS};
+                  echo ${_DEPLOYMENT_OVERVIEW};
+                  echo $(echo ${_DEPLOYMENT_INFO} | jq -r '.deploymentInfo.errorInformation.message');
+                  exit 1;
+                fi
+              done 
+
+            done ## for 종료    
+          fi ; ## 배포 인스턴스별 배포 파일 개수만큼 반복 -- 종료
+          #############################################################################################################
+                   
+      - name: (0) End of Deployment
+        run: |
+          echo "End of the 배포 -- 수고하셨습니다."  
