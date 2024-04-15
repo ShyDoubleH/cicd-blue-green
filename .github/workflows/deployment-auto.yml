@@ -57,7 +57,7 @@ env:
   STG_CONF1_PATH:        'WAS/_env/stg/*'
   PRD_CONF1_PATH:        'WAS/_env/prd/*'  
   
-  CONF2_TARGET:           petra/CONFIG                            # 서버별 다른 설정 없는경우  'NONE'로 기입
+  CONF2_TARGET:           NONE                            # 서버별 다른 설정 없는경우  'NONE'로 기입
   DEV_CONF2_PATH:        'petra/CONFIG/_env/dev/*'
   STG_CONF2_PATH:        'petra/CONFIG/_env/stg/*'
   PRD_CONF2_PATH:        'petra/CONFIG/_env/prd/*'
