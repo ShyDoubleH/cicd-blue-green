@@ -163,7 +163,7 @@ jobs:
         run: |
           ls -al
           mvn -B package --file pom.xml
-          ls -al      
+          ls -al ./target     
         
       - name: (6) Upload-artifact@v3 
         uses: actions/upload-artifact@v4
