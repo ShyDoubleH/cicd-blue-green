@@ -1,9 +1,9 @@
-name: portal-admin-[auto][dev,stg] codedeploy-workflows
+name: main codedeploy-workflows
 
 
 on:
   push:    
-    branches: [ dev, stg ]
+    branches: [ main ]
   # workflow_dispatch:
 
 
@@ -25,20 +25,21 @@ env:
   S3_BUCKET_NAME:               s3-aicc-codedeploy
 
 
-  # 개발 계정 (LGU+ AWS)
-  DEV_ASSUME_ROLE_ACCOUNT_NO:   '406927758154' 
-  DEV_ASSUME_ROLE_NAME:         role-dev-aicc-actions
-  DEV_ASSUME_ROLE_SESSION_NAME: role-dev-aicc-github-actions
-  # 검증 계정 (LGU+ AWS)
-  STG_ASSUME_ROLE_ACCOUNT_NO:   '571113805677'
-  STG_ASSUME_ROLE_NAME:         role-stg-aicc-actions
-  STG_ASSUME_ROLE_SESSION_NAME: role-stg-aicc-github-actions
-  # 운영 계정 (LGU+ AWS)
-  PRD_ASSUME_ROLE_ACCOUNT_NO:   '329204419623'
-  PRD_ASSUME_ROLE_NAME:         role-prd-aicc-actions
-  PRD_ASSUME_ROLE_SESSION_NAME: role-prd-aicc-github-actions
+  # 개발 계정
+  DEV_ASSUME_ROLE_ACCOUNT_NO:   '394376831599'
+  DEV_ASSUME_ROLE_NAME:         github_actions_role
+  DEV_ASSUME_ROLE_SESSION_NAME: github-actions 
+  # 검증 계정 (hhseo)
+  STG_ASSUME_ROLE_ACCOUNT_NO:   '394376831599'
+  STG_ASSUME_ROLE_NAME:         github_actions_role
+  STG_ASSUME_ROLE_SESSION_NAME: github-actions 
+  # 운영 계정 (hhseo)
+  PRD_ASSUME_ROLE_ACCOUNT_NO:   '394376831599'
+  PRD_ASSUME_ROLE_NAME:         github_actions_role
+  PRD_ASSUME_ROLE_SESSION_NAME: github-actions 
+
   
-  BUILD_HOME_PATH:              oms/    
+  BUILD_HOME_PATH:              /    
 
   PROJECT_FULL_PATH:     ${{ github.workspace }}    # /home/runner/work/PROJECT_NAME/PROJECT_NAME  
 
@@ -51,7 +52,7 @@ env:
   ##################################################  
 
   #ProjectUpdate - Project Customizing
-  CONF1_TARGET:           /                            # 서버별 다른 설정 없는경우  'NONE'로 기입
+  CONF1_TARGET:           NONE                            # 서버별 다른 설정 없는경우  'NONE'로 기입
   DEV_CONF1_PATH:        'WAS/_env/dev/*'
   STG_CONF1_PATH:        'WAS/_env/stg/*'
   PRD_CONF1_PATH:        'WAS/_env/prd/*'  
