@@ -15,7 +15,7 @@ env:
   AWS_REGION:                   ap-northeast-2
 
   #ProjectUpdate #Default Settings - Required
-  PROJECT_NAME:                 hhseo-ec2-private-cicd-blue-green
+  PROJECT_NAME:                 cicd-blue-green
   COPY_PATH_LIST:               NONE
   S3_DEPLOY_MGMT_FILE_NAME:     NONE         #s3deploy.env #미사용시 'NONE' 로 기입
   BUILD_RESULT_FILE_NAME:       hello-world.war                 #빌드Job이 없는경우  'NONE'로 기입 (war/jar)  
@@ -84,7 +84,7 @@ env:
   #MODE_NAME :            ''
   #DEPLOY_INSTANCE_LIST :        ''
 
-
+ 
 
 jobs:
 #init##################################################################################################################################
