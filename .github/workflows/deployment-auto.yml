@@ -161,7 +161,6 @@ jobs:
 
       - name: (5) Build with Maven    
         run: |
-          cd ${{ env.BUILD_HOME_PATH }}
           ls -al
           mvn -B package --file pom.xml
           ls -al      
