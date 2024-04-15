@@ -16,13 +16,13 @@ env:
 
   #ProjectUpdate #Default Settings - Required
   PROJECT_NAME:                 portal-admin
-  COPY_PATH_LIST:               WAS,petra
-  S3_DEPLOY_MGMT_FILE_NAME:     s3deploy.env         #s3deploy.env #미사용시 'NONE' 로 기입
+  COPY_PATH_LIST:               NONE
+  S3_DEPLOY_MGMT_FILE_NAME:     NONE         #s3deploy.env #미사용시 'NONE' 로 기입
   BUILD_RESULT_FILE_NAME:       ROOT.war                 #빌드Job이 없는경우  'NONE'로 기입 (war/jar)  
   S3_DEPLOY_FOLDER_NAME:        deployment-files
   CODEDEPLOY_PATH:              .codedeploy
   ADD_LABLE:                    ''                    #'' or -web-config
-  S3_BUCKET_NAME:               s3-aicc-codedeploy
+  S3_BUCKET_NAME:               hhseo-s3
 
 
   # 개발 계정
@@ -144,14 +144,14 @@ jobs:
     
     steps:                  
       - name: (1) Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v2
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::${{ needs.initialization.outputs.AWS_ACCOUNT_ID }}:role/${{ needs.initialization.outputs.AWS_ASSUME_ROLE_NAME }}
           role-session-name: ${{ needs.initialization.outputs.AWS_ROLE_SESSION_NAME }}
           aws-region: ${{ env.AWS_REGION }}                   
 
       - name: (3) Run Checkout Repository 
-        uses: actions/checkout@v3 
+        uses: actions/checkout@v4 
       
       - name: (4) Run setup-java
         uses: actions/setup-java@v3
@@ -167,7 +167,7 @@ jobs:
           ls -al      
         
       - name: (6) Upload-artifact@v3 
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: build-artifact
           path: |
@@ -179,7 +179,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:           
       - name: (1) Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v2
+        uses: aws-actions/configure-aws-credentials@v3
         with:
           role-to-assume: arn:aws:iam::${{ needs.initialization.outputs.AWS_ACCOUNT_ID }}:role/${{ needs.initialization.outputs.AWS_ASSUME_ROLE_NAME }}
           role-session-name: ${{ needs.initialization.outputs.AWS_ROLE_SESSION_NAME }}
@@ -194,10 +194,10 @@ jobs:
           echo "Selected-AZ: ${{ inputs.aws-az-info }}"
           
       - name: (3-1) Run Checkout Repository 
-        uses: actions/checkout@v3     
+        uses: actions/checkout@v4    
 
-      - name: (3-2) Download-artifact@v3     
-        uses: actions/download-artifact@v3
+      - name: (3-2) Download-artifact@v4
+        uses: actions/download-artifact@v4
         with:
           name: build-artifact
           path: artifact        
@@ -345,7 +345,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:                  
       - name: (1) Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v2
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::${{ needs.initialization.outputs.AWS_ACCOUNT_ID }}:role/${{ needs.initialization.outputs.AWS_ASSUME_ROLE_NAME }}
           role-session-name: ${{ needs.initialization.outputs.AWS_ROLE_SESSION_NAME }}
