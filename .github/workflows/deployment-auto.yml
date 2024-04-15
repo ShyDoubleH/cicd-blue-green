@@ -362,7 +362,7 @@ jobs:
               ###############################
               # 메인작업 Create Deployment 
               ###############################
-              _OUTPUT=$(aws deploy create-deployment --application-name ${{ env.PROJECT_NAME }}-${{ needs.initialization.outputs.MODE_NAME }} \
+              _OUTPUT=$(aws deploy create-deployment --application-name ${{ env.PROJECT_NAME }} \
                   --deployment-group-name ${{ env.PROJECT_NAME }}-${dpinstnm} \
                   --s3-location bucket=${{ env.S3_BUCKET_NAME }},bundleType=zip,key=${{ env.PROJECT_NAME }}/${{ needs.initialization.outputs.MODE_NAME }}/${{ env.PROJECT_NAME }}-${dpinstnm}/${{ env.PROJECT_NAME }}-${dpinstnm}.zip \
                   --file-exists-behavior OVERWRITE \
