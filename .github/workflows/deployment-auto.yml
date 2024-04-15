@@ -227,7 +227,6 @@ jobs:
               # ex) cp .codedeploy .codedeploy-az2x 작업
               # cp "${{ env.CODEDEPLOY_PATH }}${{ env.ADD_LABLE }}/" -r "${NEW_DEPLOY_HOME_PATH}/" --recursive  #<- 이 코드 오작동으로 cp 순차적으로 실행
               cp "${{ env.CODEDEPLOY_PATH }}${{ env.ADD_LABLE }}/files/" -r "${NEW_DEPLOY_HOME_PATH}/" --recursive 
-              cp "${{ env.CODEDEPLOY_PATH }}${{ env.ADD_LABLE }}/lguplus/" -r "${NEW_DEPLOY_HOME_PATH}/" --recursive 
               cp "${{ env.CODEDEPLOY_PATH }}${{ env.ADD_LABLE }}/scripts/" -r "${NEW_DEPLOY_HOME_PATH}/" --recursive 
               cp "${{ env.CODEDEPLOY_PATH }}${{ env.ADD_LABLE }}/appspec.yml" -r "${NEW_DEPLOY_HOME_PATH}/" --recursive
 
