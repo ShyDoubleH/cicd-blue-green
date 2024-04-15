@@ -15,7 +15,7 @@ env:
   AWS_REGION:                   ap-northeast-2
 
   #ProjectUpdate #Default Settings - Required
-  PROJECT_NAME:                 portal-admin
+  PROJECT_NAME:                 hhseo-ec2-private-cicd-blue-green
   COPY_PATH_LIST:               NONE
   S3_DEPLOY_MGMT_FILE_NAME:     NONE         #s3deploy.env #미사용시 'NONE' 로 기입
   BUILD_RESULT_FILE_NAME:       hello-world.war                 #빌드Job이 없는경우  'NONE'로 기입 (war/jar)  
@@ -46,8 +46,8 @@ env:
   ##################################################
   #각 환경별 배포 EC2 인스턴스 이름 목록
   ##################################################
-  DEV_DEPLOY_INSTANCE_LIST:    az2c
-  STG_DEPLOY_INSTANCE_LIST:    az2a,az2c
+  DEV_DEPLOY_INSTANCE_LIST:    az2a-dev
+  STG_DEPLOY_INSTANCE_LIST:    az2a-stg
   PRD_DEPLOY_INSTANCE_LIST:    az2a
   ##################################################  
 
