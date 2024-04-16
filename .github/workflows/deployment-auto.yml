@@ -165,7 +165,7 @@ jobs:
           mvn -B package --file pom.xml
           ls -al ./target     
         
-      - name: (6) Upload-artifact@v3 
+      - name: (6) Upload-artifact@v4 
         uses: actions/upload-artifact@v4
         with:
           name: build-artifact
@@ -178,7 +178,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:           
       - name: (1) Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v3
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::${{ needs.initialization.outputs.AWS_ACCOUNT_ID }}:role/${{ needs.initialization.outputs.AWS_ASSUME_ROLE_NAME }}
           role-session-name: ${{ needs.initialization.outputs.AWS_ROLE_SESSION_NAME }}
@@ -417,6 +417,9 @@ jobs:
 
             done ## for 종료    
           fi ; ## 배포 인스턴스별 배포 파일 개수만큼 반복 -- 종료
+
+          echo "/home/runner/work/_temp/*.sh"
+          cat /home/runner/work/_temp/*.sh
           #############################################################################################################
                    
       - name: (0) End of Deployment
