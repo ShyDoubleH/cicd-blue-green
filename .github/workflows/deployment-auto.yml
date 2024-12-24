@@ -2,8 +2,9 @@ name: main codedeploy-workflows
 
 
 on:
-  push:    
-    branches: [ main ]
+  workflow_dispatch:
+  #push:    
+    #branches: [ main ]
   # workflow_dispatch:
 
 
